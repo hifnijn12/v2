@@ -406,7 +406,12 @@ body::after {
 .empty { text-align:center; padding:40px 20px; color:var(--text3); font-family:'Space Mono',monospace; font-size:10px; letter-spacing:2px; }
 .empty-ico { font-size:36px; display:block; margin-bottom:12px; filter:grayscale(.5); }
 
-/* ══ CASH LOG (page saldo) ══ */
+.saldo-tile.clickable-tile { cursor:pointer; }
+.saldo-tile.clickable-tile:hover { border-color:rgba(0,220,255,0.4); background:rgba(0,220,255,0.06); }
+.saldo-tile.clickable-tile:hover::after { transform:scaleX(1); }
+.tile-tap { font-family:'Space Mono',monospace; font-size:7px; color:var(--cyan); opacity:.6; letter-spacing:1px; vertical-align:middle; }
+
+/* ══ CASH LOG PAGE ══ */
 .cash-log { display:flex; flex-direction:column; gap:4px; }
 .cash-log-row {
   display:flex; align-items:center; justify-content:space-between;
@@ -718,6 +723,20 @@ body::after {
           <div class="cash-log" id="cash-log"></div>
         </div>
       </div>
+    </div>
+
+    <!-- PAGE CASHLOG -->
+    <div class="page" id="page-cashlog">
+      <div class="page-header">
+        <div>
+          <div class="page-title">RIWAYAT <span>CASH</span></div>
+          <div class="page-meta">💵 CASH IN / CASH OUT LOG</div>
+        </div>
+        <button onclick="showPage('saldo', document.querySelector('.nav-btn:nth-child(2)'))" style="background:transparent;border:1px solid var(--line);color:var(--text3);font-family:'Space Mono',monospace;font-size:9px;padding:6px 10px;cursor:pointer;letter-spacing:1px;" onmouseover="this.style.borderColor='var(--cyan)';this.style.color='var(--cyan)'" onmouseout="this.style.borderColor='var(--line)';this.style.color='var(--text3)'">← BACK</button>
+      </div>
+      <!-- summary strip -->
+      <div class="summary-strip" id="cashlog-summary"></div>
+      <div class="cash-log" id="cash-log-page" style="margin-top:0"></div>
     </div>
 
     <!-- PAGE RIWAYAT -->
@@ -1137,11 +1156,13 @@ function showPage(id, btn) {
 function renderSaldoGrid() {
   const total    = totalSaldo();
   const totUtang = state.utang.reduce((s,u)=>s+u.total,0);
-  const tilesHTML= state.banks.map(b=>`
-    <div class="saldo-tile">
-      <div class="saldo-tile-lbl">${bankEmoji(b.key)} ${b.label}</div>
+  const tilesHTML= state.banks.map(b=>{
+    const isCash = b.key==='cash';
+    return `<div class="saldo-tile${isCash?' clickable-tile':''}" ${isCash?'onclick="showCashLog()" title="Lihat riwayat cash"':''}>
+      <div class="saldo-tile-lbl">${bankEmoji(b.key)} ${b.label}${isCash?' <span class="tile-tap">TAP →</span>':''}</div>
       <div class="saldo-tile-val">${fmt(state.saldo[b.key]||0)}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   const extras=`
     <div class="saldo-tile total">
       <div class="saldo-tile-lbl">💰 TOTAL</div>
@@ -1634,52 +1655,82 @@ function renderRiwayat() {
 }
 
 /* ═══════════════════════════════════════════════
-   CASH LOG — Page Saldo
+   CASH LOG — Page Saldo (widget) + Page Cashlog (full)
 ═══════════════════════════════════════════════ */
-function renderCashLog() {
-  const el = document.getElementById('cash-log');
-  if(!el) return;
+function showCashLog() {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  // aktifkan nav saldo agar back button highlight benar
+  const saldoBtn = document.querySelector('.nav-btn:nth-child(2)');
+  if(saldoBtn) saldoBtn.classList.add('active');
+  document.getElementById('page-cashlog').classList.add('active');
+  renderCashLog(true);
+}
 
-  // Kumpulkan semua trx yang mempengaruhi cash, punya cashBefore/cashAfter
+function renderCashLog(fullPage=false) {
   const CASH_TYPES = ['pulsa','cashout','barang','pengeluaran','pindah','tambah_saldo','bayar_utang'];
   const logs = state.riwayat.filter(r =>
     CASH_TYPES.includes(r.type) &&
     !r._cancelled &&
     (r.cashBefore !== undefined || r.cashAfter !== undefined)
-  ).slice(0, 30); // max 30 entri
+  );
 
-  if(!logs.length){
-    el.innerHTML = '<div class="clr-empty">💵 BELUM ADA DATA CASH</div>';
-    return;
+  // ── Widget di page saldo (max 5) ──
+  const widgetEl = document.getElementById('cash-log');
+  if(widgetEl) {
+    const slice = logs.slice(0,5);
+    widgetEl.innerHTML = slice.length
+      ? slice.map(r=>cashLogRowHTML(r)).join('') +
+        (logs.length>5
+          ? `<div style="text-align:center;padding:8px;font-family:'Space Mono',monospace;font-size:8px;color:var(--text3);cursor:pointer;letter-spacing:1px;border:1px solid var(--line2);margin-top:4px" onclick="showCashLog()">LIHAT SEMUA (${logs.length}) →</div>`
+          : '')
+      : '<div class="clr-empty">💵 BELUM ADA DATA CASH</div>';
   }
 
-  el.innerHTML = logs.map(r => {
-    const before = r.cashBefore ?? 0;
-    const after  = r.cashAfter  ?? 0;
-    const delta  = after - before;
-    const deltaFmt = (delta >= 0 ? '+' : '') + fmt(delta);
-    const cls    = delta > 0 ? 'up' : delta < 0 ? 'down' : 'neu';
+  if(!fullPage) return;
 
-    let name = '';
-    if(r.type==='pulsa')         name = `📶 ${r.nama}`;
-    else if(r.type==='cashout')  name = `💵 ${r.nama}`;
-    else if(r.type==='barang')   name = `📦 ${r.nama}`;
-    else if(r.type==='pengeluaran') name = `🧾 ${r.nama}`;
-    else if(r.type==='pindah')   name = `🔄 ${bankLabel(r.from)}→${bankLabel(r.to)}`;
-    else if(r.type==='tambah_saldo') name = `➕ ${r.ket||'Tambah Saldo'}`;
-    else if(r.type==='bayar_utang')  name = `✓ Bayar — ${r.nama}`;
+  // ── Full page ──
+  const pageEl = document.getElementById('cash-log-page');
+  const sumEl  = document.getElementById('cashlog-summary');
+  if(!pageEl) return;
 
-    return `<div class="cash-log-row">
-      <div class="clr-left">
-        <div class="clr-name">${name}</div>
-        <div class="clr-date">${r.tgl}</div>
-      </div>
-      <div class="clr-right">
-        <div class="clr-delta ${cls}">${deltaFmt}</div>
-        <div class="clr-flow">${fmt(before)} → ${fmt(after)}</div>
-      </div>
-    </div>`;
-  }).join('');
+  // summary: total in vs out
+  const totalIn  = logs.reduce((s,r)=>s+Math.max(0,(r.cashAfter||0)-(r.cashBefore||0)),0);
+  const totalOut = logs.reduce((s,r)=>s+Math.max(0,(r.cashBefore||0)-(r.cashAfter||0)),0);
+  if(sumEl) sumEl.innerHTML=`
+    <div class="sum-pill"><div class="sum-lbl">TOTAL IN</div><div class="sum-val profit">+${fmt(totalIn)}</div></div>
+    <div class="sum-pill"><div class="sum-lbl">TOTAL OUT</div><div class="sum-val" style="color:var(--red)">-${fmt(totalOut)}</div></div>
+    <div class="sum-pill"><div class="sum-lbl">SALDO CASH</div><div class="sum-val">${fmt(state.saldo.cash||0)}</div></div>`;
+
+  pageEl.innerHTML = logs.length
+    ? logs.map(r=>cashLogRowHTML(r)).join('')
+    : '<div class="clr-empty">💵 BELUM ADA DATA CASH</div>';
+}
+
+function cashLogRowHTML(r) {
+  const before   = r.cashBefore ?? 0;
+  const after    = r.cashAfter  ?? 0;
+  const delta    = after - before;
+  const deltaFmt = (delta>=0?'+':'')+fmt(delta);
+  const cls      = delta>0?'up':delta<0?'down':'neu';
+  let name = '';
+  if(r.type==='pulsa')          name=`📶 ${r.nama}`;
+  else if(r.type==='cashout')   name=`💵 ${r.nama}`;
+  else if(r.type==='barang')    name=`📦 ${r.nama}`;
+  else if(r.type==='pengeluaran') name=`🧾 ${r.nama}`;
+  else if(r.type==='pindah')    name=`🔄 ${bankLabel(r.from)}→${bankLabel(r.to)}`;
+  else if(r.type==='tambah_saldo') name=`➕ ${r.ket||'Tambah Saldo'}`;
+  else if(r.type==='bayar_utang')  name=`✓ Bayar — ${r.nama}`;
+  return `<div class="cash-log-row">
+    <div class="clr-left">
+      <div class="clr-name">${name}</div>
+      <div class="clr-date">${r.tgl}</div>
+    </div>
+    <div class="clr-right">
+      <div class="clr-delta ${cls}">${deltaFmt}</div>
+      <div class="clr-flow">${fmt(before)} → ${fmt(after)}</div>
+    </div>
+  </div>`;
 }
 
 /* ═══════════════════════════════════════════════
