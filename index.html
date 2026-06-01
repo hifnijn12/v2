@@ -411,6 +411,30 @@ body::after {
 .saldo-tile.clickable-tile:hover::after { transform:scaleX(1); }
 .tile-tap { font-family:'Space Mono',monospace; font-size:7px; color:var(--cyan); opacity:.6; letter-spacing:1px; vertical-align:middle; }
 
+/* ══ ISI CEPAT TERPADU ══ */
+.qf-panel { margin-bottom:14px; }
+.qf-lbl { font-family:'Space Mono',monospace; font-size:8px; color:var(--text3); letter-spacing:2px; text-transform:uppercase; margin-bottom:6px; }
+.qf-list { display:flex; flex-direction:column; gap:5px; }
+.qf-item {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:9px 12px; background:var(--surface); border:1px solid var(--line2);
+  cursor:pointer; transition:all .15s; gap:8px;
+}
+.qf-item:hover { border-color:var(--cyan); background:var(--cyan-dim); }
+.qf-item:active { transform:scale(.98); }
+.qf-left  { display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
+.qf-icon  { font-size:16px; flex-shrink:0; }
+.qf-name  { font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.qf-meta  { font-family:'Space Mono',monospace; font-size:8px; color:var(--text3); margin-top:1px; }
+.qf-right { display:flex; flex-direction:column; align-items:flex-end; gap:2px; flex-shrink:0; }
+.qf-amt   { font-family:'Russo One',sans-serif; font-size:13px; color:var(--amber); }
+.qf-badge { font-family:'Space Mono',monospace; font-size:7px; padding:1px 5px; border:1px solid; letter-spacing:.5px; text-transform:uppercase; }
+.qf-badge.pulsa  { color:var(--cyan);   border-color:rgba(0,220,255,0.3); }
+.qf-badge.cashout{ color:var(--amber);  border-color:rgba(255,184,0,0.3); }
+.qf-badge.barang { color:var(--green);  border-color:rgba(0,255,136,0.3); }
+.qf-badge.pgel   { color:var(--red);    border-color:rgba(255,61,90,0.3); }
+.qf-empty { font-family:'Space Mono',monospace; font-size:9px; color:var(--text3); padding:12px 0; letter-spacing:1px; }
+
 /* ══ CASH LOG PAGE ══ */
 .cash-log { display:flex; flex-direction:column; gap:4px; }
 .cash-log-row {
@@ -552,6 +576,12 @@ body::after {
       <div class="section">
         <div class="cm cm-tl"></div><div class="cm cm-br"></div>
         <div class="section-body" style="padding-top:16px">
+          <!-- PANEL ISI CEPAT TERPADU -->
+          <div class="qf-panel" id="qf-panel">
+            <div class="qf-lbl">⚡ ISI CEPAT — TOP 3 TERAKHIR</div>
+            <div class="qf-list" id="qf-list"><div class="qf-empty">Belum ada riwayat transaksi</div></div>
+          </div>
+
           <div class="type-tabs">
             <button class="type-tab active" onclick="setType('pulsa',this)"><span class="ti">📶</span>PULSA</button>
             <button class="type-tab" onclick="setType('cashout',this)"><span class="ti">💵</span>CASHOUT</button>
@@ -1212,61 +1242,129 @@ function getRecent(type, n=3) {
   for(const r of state.riwayat){
     if(r.type!==type || r._cancelled) continue;
     let key;
-    if(type==='pulsa')       key=r.nama+'|'+r.modal+'|'+r.jual;
-    else if(type==='cashout') key=r.nama+'|'+r.total+'|'+(r.fee||0);
-    else if(type==='barang')  key=r.nama+'|'+r.modal+'|'+r.jual;
+    if(type==='pulsa')            key=r.nama+'|'+r.modal+'|'+r.jual;
+    else if(type==='cashout')     key=r.nama+'|'+r.total+'|'+(r.fee||0);
+    else if(type==='barang')      key=r.nama+'|'+r.modal+'|'+r.jual;
     else if(type==='pengeluaran') key=r.nama+'|'+r.jumlah+'|'+r.from;
     if(seen.has(key)) continue; seen.add(key); res.push(r);
     if(res.length>=n) break;
   }
   return res;
 }
+
+/* ── Helper: switch tab tanpa duplikasi ── */
+function switchTab(tabIdx) {
+  const TYPES=['pulsa','cashout','barang','pengeluaran'];
+  document.querySelectorAll('.type-tab').forEach((t,i)=>t.classList.toggle('active',i===tabIdx));
+  TYPES.forEach((tp,i)=>document.getElementById('form-'+tp).style.display=i===tabIdx?'block':'none');
+}
+
 function refreshPresets() {
+  /* ── Panel terpadu: top 3 lintas tipe ── */
+  const qfList = document.getElementById('qf-list');
+  if(qfList) {
+    // Ambil 1 unique terbaru per tipe, max 3 total dari riwayat
+    const TYPES=['pulsa','cashout','barang','pengeluaran'];
+    const seen={}, items=[];
+    for(const r of state.riwayat){
+      if(!TYPES.includes(r.type)||r._cancelled) continue;
+      if(!seen[r.type]){ seen[r.type]=true; items.push(r); }
+      if(items.length>=3) break;
+    }
+    if(!items.length){
+      qfList.innerHTML='<div class="qf-empty">Belum ada riwayat transaksi</div>';
+    } else {
+      qfList.innerHTML = items.map(r=>{
+        const ICONS={pulsa:'📶',cashout:'💵',barang:'📦',pengeluaran:'🧾'};
+        const ico  = ICONS[r.type]||'📋';
+        let meta='', amt='', cb='';
+        if(r.type==='pulsa'){
+          meta=`Modal ${fmt(r.modal)} · Jual ${fmt(r.jual)}`;
+          amt=fmt(r.jual); cb=`onclick="qfFill('pulsa',${JSON.stringify(r)})"`;
+        } else if(r.type==='cashout'){
+          meta=`Total ${fmt(r.total)} · Profit ${fmt(r.fee||0)}`;
+          amt=fmt(r.total); cb=`onclick="qfFill('cashout',${JSON.stringify(r)})"`;
+        } else if(r.type==='barang'){
+          meta=`Modal ${fmt(r.modal)} · Jual ${fmt(r.jual)}`;
+          amt=fmt(r.jual); cb=`onclick="qfFill('barang',${JSON.stringify(r)})"`;
+        } else if(r.type==='pengeluaran'){
+          meta=`Dari ${bankLabel(r.from)}`;
+          amt=fmt(r.jumlah); cb=`onclick="qfFill('pgel',${JSON.stringify(r)})"`;
+        }
+        return `<div class="qf-item" ${cb}>
+          <div class="qf-left">
+            <div class="qf-icon">${ico}</div>
+            <div>
+              <div class="qf-name">${r.nama||r.ket||'—'}</div>
+              <div class="qf-meta">${meta}</div>
+            </div>
+          </div>
+          <div class="qf-right">
+            <div class="qf-amt">${amt}</div>
+            <div class="qf-badge ${r.type==='pengeluaran'?'pgel':r.type}">${r.type==='pengeluaran'?'KELUAR':r.type.toUpperCase()}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  /* ── Per-form preset chips (VC fixed + recent per tab) ── */
   const fixedBtns=`<span class="preset-chip" onclick="fillPreset('VC20k')">VC 20K</span><span class="preset-chip" onclick="fillPreset('VC15k')">VC 15K</span><span class="preset-chip" onclick="fillPreset('VC18.5k')">VC 18.5K</span>`;
-  const recentPulsa=getRecent('pulsa').map(r=>`<span class="preset-chip recent" onclick="fillRecentPulsa(${JSON.stringify(r.nama)},${JSON.stringify(r.from)},${r.modal},${r.jual})">${r.nama}</span>`).join('');
+  const recentPulsa=getRecent('pulsa').map(r=>`<span class="preset-chip recent" onclick="qfFill('pulsa',${JSON.stringify(r)})">${r.nama}</span>`).join('');
   const pp=document.getElementById('preset-pulsa');
   if(pp) pp.innerHTML=fixedBtns+recentPulsa;
 
   const coEl=document.getElementById('preset-cashout');
   const rc=getRecent('cashout');
-  if(coEl) coEl.innerHTML=rc.length?rc.map(r=>`<span class="preset-chip recent" onclick="fillRecentCO(${JSON.stringify(r.nama)},${JSON.stringify(r.from)},${r.total},${r.fee||0})">${r.nama} (${fmt(r.total)})</span>`).join(''):`<span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text3)">—</span>`;
+  if(coEl) coEl.innerHTML=rc.length?rc.map(r=>`<span class="preset-chip recent" onclick="qfFill('cashout',${JSON.stringify(r)})">${r.nama} (${fmt(r.total)})</span>`).join(''):`<span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text3)">—</span>`;
 
   const brEl=document.getElementById('preset-barang');
   const rb=getRecent('barang');
-  if(brEl) brEl.innerHTML=rb.length?rb.map(r=>`<span class="preset-chip recent" onclick="fillRecentBr(${JSON.stringify(r.nama)},${r.modal},${r.jual})">${r.nama}</span>`).join(''):`<span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text3)">—</span>`;
+  if(brEl) brEl.innerHTML=rb.length?rb.map(r=>`<span class="preset-chip recent" onclick="qfFill('barang',${JSON.stringify(r)})">${r.nama}</span>`).join(''):`<span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text3)">—</span>`;
 
   const pgEl=document.getElementById('preset-pgel');
   const rp=getRecent('pengeluaran');
-  if(pgEl) pgEl.innerHTML=rp.length?rp.map(r=>`<span class="preset-chip recent" onclick="fillRecentPg(${JSON.stringify(r.nama)},${JSON.stringify(r.from)},${r.jumlah})">${r.nama} (${fmt(r.jumlah)})</span>`).join(''):`<span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text3)">—</span>`;
+  if(pgEl) pgEl.innerHTML=rp.length?rp.map(r=>`<span class="preset-chip recent" onclick="qfFill('pgel',${JSON.stringify(r)})">${r.nama} (${fmt(r.jumlah)})</span>`).join(''):`<span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text3)">—</span>`;
 }
-function fillRecentPulsa(n,f,m,j){
-  setType('pulsa', document.querySelector('.type-tab:nth-child(1)'));
-  document.querySelectorAll('.type-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
-  document.getElementById('p-nama').value=n; document.getElementById('p-from').value=f;
-  document.getElementById('p-modal').value=m; document.getElementById('p-jual').value=j;
-  prevPulsa(); toast('⚡ ISI CEPAT: '+n);
+
+/* ── MASTER fill function — isi semua kolom + switch tab ── */
+function qfFill(type, r) {
+  if(type==='pulsa'){
+    switchTab(0);
+    document.getElementById('p-nama').value  = r.nama||'';
+    document.getElementById('p-from').value  = r.from||'';
+    document.getElementById('p-modal').value = r.modal||0;
+    document.getElementById('p-jual').value  = r.jual||0;
+    prevPulsa();
+  } else if(type==='cashout'){
+    switchTab(1);
+    document.getElementById('co-nama').value  = r.nama||'';
+    document.getElementById('co-from').value  = r.from||'';
+    document.getElementById('co-total').value = r.total||0;
+    document.getElementById('co-fee').value   = r.fee||0;
+    prevCashout();
+  } else if(type==='barang'){
+    switchTab(2);
+    document.getElementById('br-nama').value  = r.nama||'';
+    document.getElementById('br-modal').value = r.modal||0;
+    document.getElementById('br-jual').value  = r.jual||0;
+    prevBarang();
+  } else if(type==='pgel'){
+    switchTab(3);
+    document.getElementById('pg-nama').value   = r.nama||'';
+    document.getElementById('pg-from').value   = r.from||'';
+    document.getElementById('pg-jumlah').value = r.jumlah||0;
+  }
+  // scroll ke form
+  document.querySelector('.section-body')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+  toast('⚡ ISI CEPAT: '+(r.nama||r.ket||type));
 }
-function fillRecentCO(n,f,t,fee){
-  // switch ke tab cashout
-  document.querySelectorAll('.type-tab').forEach((tb,i)=>tb.classList.toggle('active',i===1));
-  ['pulsa','cashout','barang','pengeluaran'].forEach((tp,i)=>document.getElementById('form-'+tp).style.display=i===1?'block':'none');
-  document.getElementById('co-nama').value=n; document.getElementById('co-from').value=f;
-  document.getElementById('co-total').value=t; document.getElementById('co-fee').value=fee;
-  prevCashout(); toast('⚡ ISI CEPAT: '+n);
-}
-function fillRecentBr(n,m,j){
-  document.querySelectorAll('.type-tab').forEach((tb,i)=>tb.classList.toggle('active',i===2));
-  ['pulsa','cashout','barang','pengeluaran'].forEach((tp,i)=>document.getElementById('form-'+tp).style.display=i===2?'block':'none');
-  document.getElementById('br-nama').value=n;
-  document.getElementById('br-modal').value=m; document.getElementById('br-jual').value=j;
-  prevBarang(); toast('⚡ ISI CEPAT: '+n);
-}
-function fillRecentPg(n,f,jml){
-  document.querySelectorAll('.type-tab').forEach((tb,i)=>tb.classList.toggle('active',i===3));
-  ['pulsa','cashout','barang','pengeluaran'].forEach((tp,i)=>document.getElementById('form-'+tp).style.display=i===3?'block':'none');
-  document.getElementById('pg-nama').value=n; document.getElementById('pg-from').value=f;
-  document.getElementById('pg-jumlah').value=jml; toast('⚡ ISI CEPAT: '+n);
-}
+
+/* legacy wrappers — masih dipakai fillPreset VC fixed */
+function fillRecentPulsa(n,f,m,j)  { qfFill('pulsa',   {nama:n,from:f,modal:m,jual:j}); }
+function fillRecentCO(n,f,t,fee)    { qfFill('cashout', {nama:n,from:f,total:t,fee}); }
+function fillRecentBr(n,m,j)        { qfFill('barang',  {nama:n,modal:m,jual:j}); }
+function fillRecentPg(n,f,jml)      { qfFill('pgel',    {nama:n,from:f,jumlah:jml}); }
 
 /* ═══════════════════════════════════════════════
    FORM LOGIC
