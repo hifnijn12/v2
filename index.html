@@ -406,6 +406,37 @@ body::after {
 .empty { text-align:center; padding:40px 20px; color:var(--text3); font-family:'Space Mono',monospace; font-size:10px; letter-spacing:2px; }
 .empty-ico { font-size:36px; display:block; margin-bottom:12px; filter:grayscale(.5); }
 
+/* ══ SALDO SNAPSHOT ══ */
+.trx-snap-toggle {
+  margin-top:5px; display:inline-flex; align-items:center; gap:4px;
+  font-family:'Space Mono',monospace; font-size:8px; color:var(--text3);
+  cursor:pointer; user-select:none; border:1px solid var(--line2);
+  padding:2px 7px; transition:all .15s; letter-spacing:1px;
+}
+.trx-snap-toggle:hover { border-color:var(--cyan); color:var(--cyan); }
+.trx-snap-toggle .snap-arr { transition:transform .2s; display:inline-block; }
+.trx-snap-toggle.open .snap-arr { transform:rotate(180deg); }
+
+.trx-snap-body {
+  display:none; margin-top:6px; padding:8px 10px;
+  background:rgba(0,0,0,0.3); border:1px solid var(--line2);
+  font-family:'Space Mono',monospace; font-size:8px;
+}
+.trx-snap-body.open { display:block; }
+.snap-head { color:var(--text3); letter-spacing:2px; text-transform:uppercase; margin-bottom:6px; font-size:7px; }
+.snap-row { display:flex; justify-content:space-between; align-items:center; padding:2px 0; border-bottom:1px solid rgba(255,255,255,0.03); }
+.snap-row:last-child { border-bottom:none; }
+.snap-bank { color:var(--text3); }
+.snap-vals { display:flex; align-items:center; gap:6px; }
+.snap-before { color:var(--text3); }
+.snap-arrow  { color:var(--text3); font-size:7px; }
+.snap-after  { color:var(--cyan); font-weight:700; }
+.snap-after.up   { color:var(--green); }
+.snap-after.down { color:var(--red); }
+.snap-total-row { display:flex; justify-content:space-between; margin-top:6px; padding-top:5px; border-top:1px solid var(--line); }
+.snap-total-lbl { color:var(--text3); font-size:7px; letter-spacing:1px; }
+.snap-total-val { font-family:'Russo One',sans-serif; font-size:10px; color:var(--amber); }
+
 @media(max-width:480px){
   .form-grid { grid-template-columns:1fr; }
   .form-grid.three { grid-template-columns:1fr 1fr; }
@@ -1191,10 +1222,34 @@ function refreshPresets() {
   const rp=getRecent('pengeluaran');
   if(pgEl) pgEl.innerHTML=rp.length?rp.map(r=>`<span class="preset-chip recent" onclick="fillRecentPg(${JSON.stringify(r.nama)},${JSON.stringify(r.from)},${r.jumlah})">${r.nama} (${fmt(r.jumlah)})</span>`).join(''):`<span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text3)">—</span>`;
 }
-function fillRecentPulsa(n,f,m,j){ document.getElementById('p-nama').value=n; document.getElementById('p-from').value=f; document.getElementById('p-modal').value=m; document.getElementById('p-jual').value=j; prevPulsa(); toast('FILLED: '+n); }
-function fillRecentCO(n,f,t,fee){ document.getElementById('co-nama').value=n; document.getElementById('co-from').value=f; document.getElementById('co-total').value=t; document.getElementById('co-fee').value=fee; prevCashout(); toast('FILLED: '+n); }
-function fillRecentBr(n,m,j){ document.getElementById('br-nama').value=n; document.getElementById('br-modal').value=m; document.getElementById('br-jual').value=j; prevBarang(); toast('FILLED: '+n); }
-function fillRecentPg(n,f,jml){ document.getElementById('pg-nama').value=n; document.getElementById('pg-from').value=f; document.getElementById('pg-jumlah').value=jml; toast('FILLED: '+n); }
+function fillRecentPulsa(n,f,m,j){
+  setType('pulsa', document.querySelector('.type-tab:nth-child(1)'));
+  document.querySelectorAll('.type-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  document.getElementById('p-nama').value=n; document.getElementById('p-from').value=f;
+  document.getElementById('p-modal').value=m; document.getElementById('p-jual').value=j;
+  prevPulsa(); toast('⚡ ISI CEPAT: '+n);
+}
+function fillRecentCO(n,f,t,fee){
+  // switch ke tab cashout
+  document.querySelectorAll('.type-tab').forEach((tb,i)=>tb.classList.toggle('active',i===1));
+  ['pulsa','cashout','barang','pengeluaran'].forEach((tp,i)=>document.getElementById('form-'+tp).style.display=i===1?'block':'none');
+  document.getElementById('co-nama').value=n; document.getElementById('co-from').value=f;
+  document.getElementById('co-total').value=t; document.getElementById('co-fee').value=fee;
+  prevCashout(); toast('⚡ ISI CEPAT: '+n);
+}
+function fillRecentBr(n,m,j){
+  document.querySelectorAll('.type-tab').forEach((tb,i)=>tb.classList.toggle('active',i===2));
+  ['pulsa','cashout','barang','pengeluaran'].forEach((tp,i)=>document.getElementById('form-'+tp).style.display=i===2?'block':'none');
+  document.getElementById('br-nama').value=n;
+  document.getElementById('br-modal').value=m; document.getElementById('br-jual').value=j;
+  prevBarang(); toast('⚡ ISI CEPAT: '+n);
+}
+function fillRecentPg(n,f,jml){
+  document.querySelectorAll('.type-tab').forEach((tb,i)=>tb.classList.toggle('active',i===3));
+  ['pulsa','cashout','barang','pengeluaran'].forEach((tp,i)=>document.getElementById('form-'+tp).style.display=i===3?'block':'none');
+  document.getElementById('pg-nama').value=n; document.getElementById('pg-from').value=f;
+  document.getElementById('pg-jumlah').value=jml; toast('⚡ ISI CEPAT: '+n);
+}
 
 /* ═══════════════════════════════════════════════
    FORM LOGIC
@@ -1261,10 +1316,12 @@ function submitPulsa() {
   const uname = document.getElementById('p-uname').value.trim();
   if(!nama||!modal||!jual){ toast('Lengkapi semua field!','red'); return; }
   if((state.saldo[from]||0)<modal){ toast('Saldo '+bankLabel(from)+' tidak cukup!','red'); return; }
+  const saldoBefore = snapSaldo();
   state.saldo[from]=(state.saldo[from]||0)-modal;
   if(!isU) state.saldo.cash=(state.saldo.cash||0)+jual;
   else addUtang(uname, jual, 'Pulsa: '+nama, 'pulsa');
-  state.riwayat.unshift({type:'pulsa',nama,from,modal,jual,isUtang:isU,utangNama:uname,tgl:nowStr(),date:nowDate()});
+  const saldoAfter = snapSaldo();
+  state.riwayat.unshift({type:'pulsa',nama,from,modal,jual,isUtang:isU,utangNama:uname,tgl:nowStr(),date:nowDate(),saldoBefore,saldoAfter});
   save(); toast('✓ PULSA SAVED ⚡'); resetF('pulsa'); refreshPresets(); updateCancelBanner();
 }
 
@@ -1285,6 +1342,7 @@ function submitCashout() {
   if(!nama||!total){ toast('Lengkapi semua field!','red'); return; }
   if((state.saldo.cash||0)<total){ toast('Saldo Cash tidak cukup!','red'); return; }
 
+  const saldoBefore = snapSaldo();
   // Kurangi cash sebesar amount yang di-cashout
   state.saldo.cash=(state.saldo.cash||0)-total;
 
@@ -1296,8 +1354,8 @@ function submitCashout() {
   } else {
     addUtang(uname, total+profit, 'Cash Out: '+nama, 'cashout');
   }
-
-  state.riwayat.unshift({type:'cashout',nama,from,total,fee:profit,isUtang:isU,utangNama:uname,tgl:nowStr(),date:nowDate()});
+  const saldoAfter = snapSaldo();
+  state.riwayat.unshift({type:'cashout',nama,from,total,fee:profit,isUtang:isU,utangNama:uname,tgl:nowStr(),date:nowDate(),saldoBefore,saldoAfter});
   save(); toast('✓ CASHOUT SAVED 💵'); resetF('cashout'); refreshPresets(); updateCancelBanner();
 }
 
@@ -1308,9 +1366,11 @@ function submitBarang() {
   const isU   = state.utangState.barang;
   const uname = document.getElementById('br-uname').value.trim();
   if(!nama||!modal||!jual){ toast('Lengkapi semua field!','red'); return; }
+  const saldoBefore = snapSaldo();
   if(!isU) state.saldo.cash=(state.saldo.cash||0)+jual;
   else addUtang(uname, jual, 'Barang: '+nama, 'barang');
-  state.riwayat.unshift({type:'barang',nama,modal,jual,isUtang:isU,utangNama:uname,tgl:nowStr(),date:nowDate()});
+  const saldoAfter = snapSaldo();
+  state.riwayat.unshift({type:'barang',nama,modal,jual,isUtang:isU,utangNama:uname,tgl:nowStr(),date:nowDate(),saldoBefore,saldoAfter});
   save(); toast('✓ BARANG SAVED 📦'); resetF('barang'); refreshPresets(); updateCancelBanner();
 }
 
@@ -1320,8 +1380,10 @@ function submitPgel() {
   const jumlah = parseFloat(document.getElementById('pg-jumlah').value)||0;
   if(!nama||!jumlah){ toast('Lengkapi field!','red'); return; }
   if((state.saldo[from]||0)<jumlah){ toast('Saldo tidak cukup!','red'); return; }
+  const saldoBefore = snapSaldo();
   state.saldo[from]=(state.saldo[from]||0)-jumlah;
-  state.riwayat.unshift({type:'pengeluaran',nama,from,jumlah,tgl:nowStr(),date:nowDate()});
+  const saldoAfter = snapSaldo();
+  state.riwayat.unshift({type:'pengeluaran',nama,from,jumlah,tgl:nowStr(),date:nowDate(),saldoBefore,saldoAfter});
   save(); toast('✓ PENGELUARAN SAVED 🧾');
   document.getElementById('pg-nama').value=''; document.getElementById('pg-jumlah').value='';
   refreshPresets(); updateCancelBanner();
@@ -1335,9 +1397,11 @@ function submitPindah() {
   if(from===to){ toast('From & To sama!','red'); return; }
   if(!jumlah){ toast('Masukkan jumlah!','red'); return; }
   if((state.saldo[from]||0)<(jumlah+fee)){ toast('Saldo tidak cukup!','red'); return; }
+  const saldoBefore = snapSaldo();
   state.saldo[from]=(state.saldo[from]||0)-(jumlah+fee);
   state.saldo[to]  =(state.saldo[to]||0)+jumlah;
-  state.riwayat.unshift({type:'pindah',from,to,jumlah,fee,tgl:nowStr(),date:nowDate()});
+  const saldoAfter = snapSaldo();
+  state.riwayat.unshift({type:'pindah',from,to,jumlah,fee,tgl:nowStr(),date:nowDate(),saldoBefore,saldoAfter});
   save(); toast('✓ TRANSFER DONE 🔄');
   document.getElementById('ps-jumlah').value=''; document.getElementById('ps-fee').value='';
   renderSaldoGrid(); renderBankList(); updateCancelBanner();
@@ -1348,8 +1412,10 @@ function submitTambahSaldo() {
   const jumlah = parseFloat(document.getElementById('ts-jumlah').value)||0;
   const ket    = document.getElementById('ts-ket').value.trim()||'Tambah saldo '+bankLabel(to);
   if(!jumlah){ toast('Masukkan jumlah!','red'); return; }
+  const saldoBefore = snapSaldo();
   state.saldo[to]=(state.saldo[to]||0)+jumlah;
-  state.riwayat.unshift({type:'tambah_saldo',to,jumlah,ket,tgl:nowStr(),date:nowDate()});
+  const saldoAfter = snapSaldo();
+  state.riwayat.unshift({type:'tambah_saldo',to,jumlah,ket,tgl:nowStr(),date:nowDate(),saldoBefore,saldoAfter});
   save();
   document.getElementById('ts-jumlah').value=''; document.getElementById('ts-ket').value='';
   renderSaldoGrid(); renderBankList(); updateCancelBanner();
@@ -1515,7 +1581,7 @@ function renderRiwayat() {
   const el=document.getElementById('trx-list');
   if(!list.length){ el.innerHTML='<div class="empty"><span class="empty-ico">◈</span>NO TRANSACTIONS YET</div>'; return; }
 
-  el.innerHTML=list.map(r=>{
+  el.innerHTML=list.map((r,i)=>{
     let title='', sub='', amt='', amtCls='', badges='';
     const cx=r._cancelled?`<span class="badge badge-cancel">DIBATALKAN</span>`:'';
     if(r.type==='pulsa'){
@@ -1563,12 +1629,70 @@ function renderRiwayat() {
         <div class="trx-title">${title}</div>
         <div class="trx-sub">${(sub?sub+' · ':'')+r.tgl}</div>
         <div class="trx-badges">${badges}</div>
+        ${buildSnapToggle(r, i)}
+        ${buildSnapBody(r, i)}
       </div>
       <div class="trx-item-right">
         <div class="trx-amount ${amtCls}">${amt}</div>
       </div>
     </div>`;
   }).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   SALDO SNAPSHOT HELPERS
+═══════════════════════════════════════════════ */
+const snapSaldo = () => { const o={}; state.banks.forEach(b=>o[b.key]=state.saldo[b.key]||0); return o; };
+
+function buildSnapToggle(r, i) {
+  if(!r.saldoBefore && !r.saldoAfter) return ''; // trx lama tanpa snapshot
+  return `<div class="trx-snap-toggle" id="snap-tog-${i}" onclick="toggleSnap(${i})">
+    <span class="snap-arr">▼</span> SALDO SEBELUM/SESUDAH
+  </div>`;
+}
+
+function buildSnapBody(r, i) {
+  if(!r.saldoBefore && !r.saldoAfter) return '';
+  const before = r.saldoBefore || {};
+  const after  = r.saldoAfter  || {};
+  const allKeys = [...new Set([...Object.keys(before), ...Object.keys(after)])];
+  // Hanya tampilkan akun yang berubah
+  const changed = allKeys.filter(k => (before[k]||0) !== (after[k]||0));
+  if(!changed.length) return '';
+
+  const totalBefore = allKeys.reduce((s,k)=>s+(before[k]||0),0);
+  const totalAfter  = allKeys.reduce((s,k)=>s+(after[k]||0),0);
+
+  const rows = changed.map(k => {
+    const b = before[k]||0, a = after[k]||0;
+    const diff = a - b;
+    const cls  = diff>0 ? 'up' : diff<0 ? 'down' : '';
+    return `<div class="snap-row">
+      <span class="snap-bank">${bankEmoji(k)} ${bankLabel(k)}</span>
+      <span class="snap-vals">
+        <span class="snap-before">${fmt(b)}</span>
+        <span class="snap-arrow">→</span>
+        <span class="snap-after ${cls}">${fmt(a)}</span>
+      </span>
+    </div>`;
+  }).join('');
+
+  return `<div class="trx-snap-body" id="snap-body-${i}">
+    <div class="snap-head">◈ SALDO BERUBAH</div>
+    ${rows}
+    <div class="snap-total-row">
+      <span class="snap-total-lbl">TOTAL SALDO</span>
+      <span class="snap-total-val">${fmt(totalBefore)} → ${fmt(totalAfter)}</span>
+    </div>
+  </div>`;
+}
+
+function toggleSnap(i) {
+  const tog  = document.getElementById('snap-tog-'+i);
+  const body = document.getElementById('snap-body-'+i);
+  if(!tog||!body) return;
+  const open = body.classList.toggle('open');
+  tog.classList.toggle('open', open);
 }
 
 /* ═══════════════════════════════════════════════
