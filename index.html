@@ -406,36 +406,24 @@ body::after {
 .empty { text-align:center; padding:40px 20px; color:var(--text3); font-family:'Space Mono',monospace; font-size:10px; letter-spacing:2px; }
 .empty-ico { font-size:36px; display:block; margin-bottom:12px; filter:grayscale(.5); }
 
-/* ══ SALDO SNAPSHOT ══ */
-.trx-snap-toggle {
-  margin-top:5px; display:inline-flex; align-items:center; gap:4px;
-  font-family:'Space Mono',monospace; font-size:8px; color:var(--text3);
-  cursor:pointer; user-select:none; border:1px solid var(--line2);
-  padding:2px 7px; transition:all .15s; letter-spacing:1px;
+/* ══ CASH LOG (page saldo) ══ */
+.cash-log { display:flex; flex-direction:column; gap:4px; }
+.cash-log-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 12px; background:var(--bg3); border:1px solid var(--line2);
+  transition:border-color .15s;
 }
-.trx-snap-toggle:hover { border-color:var(--cyan); color:var(--cyan); }
-.trx-snap-toggle .snap-arr { transition:transform .2s; display:inline-block; }
-.trx-snap-toggle.open .snap-arr { transform:rotate(180deg); }
-
-.trx-snap-body {
-  display:none; margin-top:6px; padding:8px 10px;
-  background:rgba(0,0,0,0.3); border:1px solid var(--line2);
-  font-family:'Space Mono',monospace; font-size:8px;
-}
-.trx-snap-body.open { display:block; }
-.snap-head { color:var(--text3); letter-spacing:2px; text-transform:uppercase; margin-bottom:6px; font-size:7px; }
-.snap-row { display:flex; justify-content:space-between; align-items:center; padding:2px 0; border-bottom:1px solid rgba(255,255,255,0.03); }
-.snap-row:last-child { border-bottom:none; }
-.snap-bank { color:var(--text3); }
-.snap-vals { display:flex; align-items:center; gap:6px; }
-.snap-before { color:var(--text3); }
-.snap-arrow  { color:var(--text3); font-size:7px; }
-.snap-after  { color:var(--cyan); font-weight:700; }
-.snap-after.up   { color:var(--green); }
-.snap-after.down { color:var(--red); }
-.snap-total-row { display:flex; justify-content:space-between; margin-top:6px; padding-top:5px; border-top:1px solid var(--line); }
-.snap-total-lbl { color:var(--text3); font-size:7px; letter-spacing:1px; }
-.snap-total-val { font-family:'Russo One',sans-serif; font-size:10px; color:var(--amber); }
+.cash-log-row:hover { border-color:var(--line); }
+.clr-left { flex:1; min-width:0; }
+.clr-name { font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.clr-date { font-family:'Space Mono',monospace; font-size:8px; color:var(--text3); margin-top:2px; }
+.clr-right { display:flex; flex-direction:column; align-items:flex-end; gap:2px; flex-shrink:0; margin-left:10px; }
+.clr-delta { font-family:'Russo One',sans-serif; font-size:13px; }
+.clr-delta.up   { color:var(--green); }
+.clr-delta.down { color:var(--red); }
+.clr-delta.neu  { color:var(--text2); }
+.clr-flow { font-family:'Space Mono',monospace; font-size:8px; color:var(--text3); }
+.clr-empty { text-align:center; padding:20px; font-family:'Space Mono',monospace; font-size:9px; color:var(--text3); letter-spacing:2px; }
 
 @media(max-width:480px){
   .form-grid { grid-template-columns:1fr; }
@@ -720,6 +708,14 @@ body::after {
             <div class="fg"><label>FEE (Rp)</label><input type="number" id="ps-fee" placeholder="0"></div>
           </div>
           <button class="btn-submit" onclick="submitPindah()">🔄 TRANSFER SEKARANG</button>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="section">
+        <div class="cm cm-tl"></div><div class="cm cm-br"></div>
+        <div class="section-head"><span class="section-head-icon">💵</span><span class="section-head-title">RIWAYAT CASH</span></div>
+        <div class="section-body" style="padding:10px 14px 14px">
+          <div class="cash-log" id="cash-log"></div>
         </div>
       </div>
     </div>
@@ -1129,7 +1125,7 @@ function showPage(id, btn) {
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   if(btn) btn.classList.add('active');
-  if(id==='saldo')   { renderSaldoGrid(); renderBankList(); refreshDrops(); }
+  if(id==='saldo')   { renderSaldoGrid(); renderBankList(); refreshDrops(); renderCashLog(); }
   if(id==='riwayat') { renderRiwayat(); updateCancelBanner(); }
   if(id==='utang')   { renderUtang(); }
   if(id==='trx')     { refreshPresets(); }
@@ -1316,12 +1312,12 @@ function submitPulsa() {
   const uname = document.getElementById('p-uname').value.trim();
   if(!nama||!modal||!jual){ toast('Lengkapi semua field!','red'); return; }
   if((state.saldo[from]||0)<modal){ toast('Saldo '+bankLabel(from)+' tidak cukup!','red'); return; }
-  const saldoBefore = snapSaldo();
+  const cashBefore = state.saldo.cash||0;
   state.saldo[from]=(state.saldo[from]||0)-modal;
   if(!isU) state.saldo.cash=(state.saldo.cash||0)+jual;
   else addUtang(uname, jual, 'Pulsa: '+nama, 'pulsa');
-  const saldoAfter = snapSaldo();
-  state.riwayat.unshift({type:'pulsa',nama,from,modal,jual,isUtang:isU,utangNama:uname,tgl:nowStr(),date:nowDate(),saldoBefore,saldoAfter});
+  const cashAfter = state.saldo.cash||0;
+  state.riwayat.unshift({type:'pulsa',nama,from,modal,jual,isUtang:isU,utangNama:uname,tgl:nowStr(),date:nowDate(),cashBefore,cashAfter});
   save(); toast('✓ PULSA SAVED ⚡'); resetF('pulsa'); refreshPresets(); updateCancelBanner();
 }
 
@@ -1342,7 +1338,7 @@ function submitCashout() {
   if(!nama||!total){ toast('Lengkapi semua field!','red'); return; }
   if((state.saldo.cash||0)<total){ toast('Saldo Cash tidak cukup!','red'); return; }
 
-  const saldoBefore = snapSaldo();
+  const cashBefore = state.saldo.cash||0;
   // Kurangi cash sebesar amount yang di-cashout
   state.saldo.cash=(state.saldo.cash||0)-total;
 
@@ -1354,8 +1350,8 @@ function submitCashout() {
   } else {
     addUtang(uname, total+profit, 'Cash Out: '+nama, 'cashout');
   }
-  const saldoAfter = snapSaldo();
-  state.riwayat.unshift({type:'cashout',nama,from,total,fee:profit,isUtang:isU,utangNama:uname,tgl:nowStr(),date:nowDate(),saldoBefore,saldoAfter});
+  const cashAfter = state.saldo.cash||0;
+  state.riwayat.unshift({type:'cashout',nama,from,total,fee:profit,isUtang:isU,utangNama:uname,tgl:nowStr(),date:nowDate(),cashBefore,cashAfter});
   save(); toast('✓ CASHOUT SAVED 💵'); resetF('cashout'); refreshPresets(); updateCancelBanner();
 }
 
@@ -1366,11 +1362,11 @@ function submitBarang() {
   const isU   = state.utangState.barang;
   const uname = document.getElementById('br-uname').value.trim();
   if(!nama||!modal||!jual){ toast('Lengkapi semua field!','red'); return; }
-  const saldoBefore = snapSaldo();
+  const cashBefore = state.saldo.cash||0;
   if(!isU) state.saldo.cash=(state.saldo.cash||0)+jual;
   else addUtang(uname, jual, 'Barang: '+nama, 'barang');
-  const saldoAfter = snapSaldo();
-  state.riwayat.unshift({type:'barang',nama,modal,jual,isUtang:isU,utangNama:uname,tgl:nowStr(),date:nowDate(),saldoBefore,saldoAfter});
+  const cashAfter = state.saldo.cash||0;
+  state.riwayat.unshift({type:'barang',nama,modal,jual,isUtang:isU,utangNama:uname,tgl:nowStr(),date:nowDate(),cashBefore,cashAfter});
   save(); toast('✓ BARANG SAVED 📦'); resetF('barang'); refreshPresets(); updateCancelBanner();
 }
 
@@ -1380,10 +1376,10 @@ function submitPgel() {
   const jumlah = parseFloat(document.getElementById('pg-jumlah').value)||0;
   if(!nama||!jumlah){ toast('Lengkapi field!','red'); return; }
   if((state.saldo[from]||0)<jumlah){ toast('Saldo tidak cukup!','red'); return; }
-  const saldoBefore = snapSaldo();
+  const cashBefore = state.saldo.cash||0;
   state.saldo[from]=(state.saldo[from]||0)-jumlah;
-  const saldoAfter = snapSaldo();
-  state.riwayat.unshift({type:'pengeluaran',nama,from,jumlah,tgl:nowStr(),date:nowDate(),saldoBefore,saldoAfter});
+  const cashAfter = state.saldo.cash||0;
+  state.riwayat.unshift({type:'pengeluaran',nama,from,jumlah,tgl:nowStr(),date:nowDate(),cashBefore,cashAfter});
   save(); toast('✓ PENGELUARAN SAVED 🧾');
   document.getElementById('pg-nama').value=''; document.getElementById('pg-jumlah').value='';
   refreshPresets(); updateCancelBanner();
@@ -1397,11 +1393,11 @@ function submitPindah() {
   if(from===to){ toast('From & To sama!','red'); return; }
   if(!jumlah){ toast('Masukkan jumlah!','red'); return; }
   if((state.saldo[from]||0)<(jumlah+fee)){ toast('Saldo tidak cukup!','red'); return; }
-  const saldoBefore = snapSaldo();
+  const cashBefore = state.saldo.cash||0;
   state.saldo[from]=(state.saldo[from]||0)-(jumlah+fee);
   state.saldo[to]  =(state.saldo[to]||0)+jumlah;
-  const saldoAfter = snapSaldo();
-  state.riwayat.unshift({type:'pindah',from,to,jumlah,fee,tgl:nowStr(),date:nowDate(),saldoBefore,saldoAfter});
+  const cashAfter = state.saldo.cash||0;
+  state.riwayat.unshift({type:'pindah',from,to,jumlah,fee,tgl:nowStr(),date:nowDate(),cashBefore,cashAfter});
   save(); toast('✓ TRANSFER DONE 🔄');
   document.getElementById('ps-jumlah').value=''; document.getElementById('ps-fee').value='';
   renderSaldoGrid(); renderBankList(); updateCancelBanner();
@@ -1412,10 +1408,10 @@ function submitTambahSaldo() {
   const jumlah = parseFloat(document.getElementById('ts-jumlah').value)||0;
   const ket    = document.getElementById('ts-ket').value.trim()||'Tambah saldo '+bankLabel(to);
   if(!jumlah){ toast('Masukkan jumlah!','red'); return; }
-  const saldoBefore = snapSaldo();
+  const cashBefore = state.saldo.cash||0;
   state.saldo[to]=(state.saldo[to]||0)+jumlah;
-  const saldoAfter = snapSaldo();
-  state.riwayat.unshift({type:'tambah_saldo',to,jumlah,ket,tgl:nowStr(),date:nowDate(),saldoBefore,saldoAfter});
+  const cashAfter = state.saldo.cash||0;
+  state.riwayat.unshift({type:'tambah_saldo',to,jumlah,ket,tgl:nowStr(),date:nowDate(),cashBefore,cashAfter});
   save();
   document.getElementById('ts-jumlah').value=''; document.getElementById('ts-ket').value='';
   renderSaldoGrid(); renderBankList(); updateCancelBanner();
@@ -1581,7 +1577,7 @@ function renderRiwayat() {
   const el=document.getElementById('trx-list');
   if(!list.length){ el.innerHTML='<div class="empty"><span class="empty-ico">◈</span>NO TRANSACTIONS YET</div>'; return; }
 
-  el.innerHTML=list.map((r,i)=>{
+  el.innerHTML=list.map(r=>{
     let title='', sub='', amt='', amtCls='', badges='';
     const cx=r._cancelled?`<span class="badge badge-cancel">DIBATALKAN</span>`:'';
     if(r.type==='pulsa'){
@@ -1629,8 +1625,6 @@ function renderRiwayat() {
         <div class="trx-title">${title}</div>
         <div class="trx-sub">${(sub?sub+' · ':'')+r.tgl}</div>
         <div class="trx-badges">${badges}</div>
-        ${buildSnapToggle(r, i)}
-        ${buildSnapBody(r, i)}
       </div>
       <div class="trx-item-right">
         <div class="trx-amount ${amtCls}">${amt}</div>
@@ -1640,59 +1634,52 @@ function renderRiwayat() {
 }
 
 /* ═══════════════════════════════════════════════
-   SALDO SNAPSHOT HELPERS
+   CASH LOG — Page Saldo
 ═══════════════════════════════════════════════ */
-const snapSaldo = () => { const o={}; state.banks.forEach(b=>o[b.key]=state.saldo[b.key]||0); return o; };
+function renderCashLog() {
+  const el = document.getElementById('cash-log');
+  if(!el) return;
 
-function buildSnapToggle(r, i) {
-  if(!r.saldoBefore && !r.saldoAfter) return ''; // trx lama tanpa snapshot
-  return `<div class="trx-snap-toggle" id="snap-tog-${i}" onclick="toggleSnap(${i})">
-    <span class="snap-arr">▼</span> SALDO SEBELUM/SESUDAH
-  </div>`;
-}
+  // Kumpulkan semua trx yang mempengaruhi cash, punya cashBefore/cashAfter
+  const CASH_TYPES = ['pulsa','cashout','barang','pengeluaran','pindah','tambah_saldo','bayar_utang'];
+  const logs = state.riwayat.filter(r =>
+    CASH_TYPES.includes(r.type) &&
+    !r._cancelled &&
+    (r.cashBefore !== undefined || r.cashAfter !== undefined)
+  ).slice(0, 30); // max 30 entri
 
-function buildSnapBody(r, i) {
-  if(!r.saldoBefore && !r.saldoAfter) return '';
-  const before = r.saldoBefore || {};
-  const after  = r.saldoAfter  || {};
-  const allKeys = [...new Set([...Object.keys(before), ...Object.keys(after)])];
-  // Hanya tampilkan akun yang berubah
-  const changed = allKeys.filter(k => (before[k]||0) !== (after[k]||0));
-  if(!changed.length) return '';
+  if(!logs.length){
+    el.innerHTML = '<div class="clr-empty">💵 BELUM ADA DATA CASH</div>';
+    return;
+  }
 
-  const totalBefore = allKeys.reduce((s,k)=>s+(before[k]||0),0);
-  const totalAfter  = allKeys.reduce((s,k)=>s+(after[k]||0),0);
+  el.innerHTML = logs.map(r => {
+    const before = r.cashBefore ?? 0;
+    const after  = r.cashAfter  ?? 0;
+    const delta  = after - before;
+    const deltaFmt = (delta >= 0 ? '+' : '') + fmt(delta);
+    const cls    = delta > 0 ? 'up' : delta < 0 ? 'down' : 'neu';
 
-  const rows = changed.map(k => {
-    const b = before[k]||0, a = after[k]||0;
-    const diff = a - b;
-    const cls  = diff>0 ? 'up' : diff<0 ? 'down' : '';
-    return `<div class="snap-row">
-      <span class="snap-bank">${bankEmoji(k)} ${bankLabel(k)}</span>
-      <span class="snap-vals">
-        <span class="snap-before">${fmt(b)}</span>
-        <span class="snap-arrow">→</span>
-        <span class="snap-after ${cls}">${fmt(a)}</span>
-      </span>
+    let name = '';
+    if(r.type==='pulsa')         name = `📶 ${r.nama}`;
+    else if(r.type==='cashout')  name = `💵 ${r.nama}`;
+    else if(r.type==='barang')   name = `📦 ${r.nama}`;
+    else if(r.type==='pengeluaran') name = `🧾 ${r.nama}`;
+    else if(r.type==='pindah')   name = `🔄 ${bankLabel(r.from)}→${bankLabel(r.to)}`;
+    else if(r.type==='tambah_saldo') name = `➕ ${r.ket||'Tambah Saldo'}`;
+    else if(r.type==='bayar_utang')  name = `✓ Bayar — ${r.nama}`;
+
+    return `<div class="cash-log-row">
+      <div class="clr-left">
+        <div class="clr-name">${name}</div>
+        <div class="clr-date">${r.tgl}</div>
+      </div>
+      <div class="clr-right">
+        <div class="clr-delta ${cls}">${deltaFmt}</div>
+        <div class="clr-flow">${fmt(before)} → ${fmt(after)}</div>
+      </div>
     </div>`;
   }).join('');
-
-  return `<div class="trx-snap-body" id="snap-body-${i}">
-    <div class="snap-head">◈ SALDO BERUBAH</div>
-    ${rows}
-    <div class="snap-total-row">
-      <span class="snap-total-lbl">TOTAL SALDO</span>
-      <span class="snap-total-val">${fmt(totalBefore)} → ${fmt(totalAfter)}</span>
-    </div>
-  </div>`;
-}
-
-function toggleSnap(i) {
-  const tog  = document.getElementById('snap-tog-'+i);
-  const body = document.getElementById('snap-body-'+i);
-  if(!tog||!body) return;
-  const open = body.classList.toggle('open');
-  tog.classList.toggle('open', open);
 }
 
 /* ═══════════════════════════════════════════════
@@ -1751,9 +1738,11 @@ function confirmBayar() {
   const bayar=parseFloat(document.getElementById('m-bayar-jml').value)||0;
   const u=state.utang[bayarIdx];
   if(!bayar||bayar>u.total){ toast('Jumlah tidak valid!','red'); return; }
+  const cashBefore = state.saldo.cash||0;
   state.saldo.cash=(state.saldo.cash||0)+bayar;
+  const cashAfter = state.saldo.cash;
   u.total-=bayar;
-  state.riwayat.unshift({type:'bayar_utang',nama:u.nama,jumlah:bayar,tgl:nowStr(),date:nowDate()});
+  state.riwayat.unshift({type:'bayar_utang',nama:u.nama,jumlah:bayar,cashBefore,cashAfter,tgl:nowStr(),date:nowDate()});
   if(u.total<=0) state.utang.splice(bayarIdx,1);
   save(); closeModal('modal-bayar'); toast('✓ UTANG DIBAYAR 🎉'); renderUtang();
 }
