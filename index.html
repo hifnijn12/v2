@@ -349,14 +349,15 @@ body::after {
 
 .divider { height:1px; background:linear-gradient(90deg,transparent,var(--line),transparent); margin:16px 0; }
 
-  /* ══ SALDO SNAPSHOT ══ */
+/* ══ SALDO SNAPSHOT ══ */
 .saldo-snap { margin-top:8px; border-top:1px solid var(--line2); padding-top:7px; display:flex; flex-direction:column; gap:4px; }
-.saldo-snap-row { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.saldo-snap-lbl { font-family:'Space Mono',monospace; font-size:7px; color:var(--text3); letter-spacing:2px; text-transform:uppercase; margin-bottom:2px; }
+.saldo-snap-row { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:2px 0; }
 .saldo-snap-bank { font-family:'Space Mono',monospace; font-size:8px; color:var(--text3); letter-spacing:.5px; flex-shrink:0; }
 .saldo-snap-vals { display:flex; align-items:center; gap:6px; font-family:'Space Mono',monospace; font-size:8px; }
-.saldo-snap-before { color:var(--text3); }
+.saldo-snap-before { color:var(--text3); text-decoration:line-through; }
 .saldo-snap-arrow { font-size:8px; font-weight:700; white-space:nowrap; }
-.saldo-snap-after { color:var(--text); font-weight:700; }
+.saldo-snap-after { font-weight:700; }
 
 /* ══ UTANG ══ */
 .utang-list { display:flex; flex-direction:column; gap:8px; }
@@ -403,7 +404,6 @@ body::after {
 .modal-input:focus { border-color:var(--cyan); }
 .modal-lbl { font-family:'Space Mono',monospace; font-size:8px; color:var(--text3); letter-spacing:2px; text-transform:uppercase; margin-bottom:5px; display:block; }
 
-/* ══ CONFIRM MODAL (ganti confirm()) ══ */
 #modal-confirm .modal-bar { background:linear-gradient(90deg,var(--red),var(--amber)); }
 
 /* ══ TOAST ══ */
@@ -481,7 +481,7 @@ body::after {
     <div class="load-icon">⚡</div>
   </div>
   <div class="load-text">INITIALIZING</div>
-  <div class="load-sub">SYSTEM BOOT · v3.1</div>
+  <div class="load-sub">SYSTEM BOOT · v3.2</div>
   <div class="load-dots">
     <div class="load-dot"></div>
     <div class="load-dot"></div>
@@ -498,12 +498,12 @@ body::after {
         <div class="login-logo-mark">⚡</div>
         <div>
           <div class="login-logo-text">KONTER</div>
-          <div class="login-logo-sub">MONITOR SYSTEM v3.1</div>
+          <div class="login-logo-sub">MONITOR SYSTEM v3.2</div>
         </div>
       </div>
       <div class="login-tabs">
-        <button class="login-tab active" id="tab-masuk" onclick="switchTab('masuk')">LOGIN</button>
-        <button class="login-tab" id="tab-daftar" onclick="switchTab('daftar')">REGISTER</button>
+        <button class="login-tab active" id="tab-masuk" onclick="switchLoginTab('masuk')">LOGIN</button>
+        <button class="login-tab" id="tab-daftar" onclick="switchLoginTab('daftar')">REGISTER</button>
       </div>
       <span class="lbl">EMAIL ADDRESS</span>
       <input class="login-input" type="email" id="login-email" placeholder="user@email.com">
@@ -585,7 +585,6 @@ body::after {
       <div class="section">
         <div class="cm cm-tl"></div><div class="cm cm-br"></div>
         <div class="section-body" style="padding-top:16px">
-          <!-- PANEL ISI CEPAT TERPADU -->
           <div class="qf-panel" id="qf-panel">
             <div class="qf-lbl">⚡ ISI CEPAT — TOP 3 TERAKHIR</div>
             <div class="qf-list" id="qf-list"><div class="qf-empty">Belum ada riwayat transaksi</div></div>
@@ -652,7 +651,6 @@ body::after {
             <div id="utang-cashout" style="display:none">
               <div class="form-grid one"><div class="fg"><label>NAMA PEMBELI</label><input type="text" id="co-uname" placeholder="Nama pelanggan"></div></div>
             </div>
-            <!-- FIX #6: hapus class "show" dari preview cashout, sama dengan pulsa/barang -->
             <div class="preview" id="prev-cashout">
               <div class="preview-row"><span>CASH KELUAR</span><strong id="co-cash" style="color:var(--red)">—</strong></div>
               <div class="preview-row"><span>PROFIT MASUK DANA</span><strong id="co-profit" style="color:var(--green)">—</strong></div>
@@ -764,7 +762,7 @@ body::after {
       </div>
     </div>
 
-    <!-- PAGE CASHLOG -->
+    <!-- PAGE CASHLOG FULL -->
     <div class="page" id="page-cashlog">
       <div class="page-header">
         <div>
@@ -773,7 +771,6 @@ body::after {
         </div>
         <button onclick="showPage('saldo', document.querySelector('.nav-btn:nth-child(2)'))" style="background:transparent;border:1px solid var(--line);color:var(--text3);font-family:'Space Mono',monospace;font-size:9px;padding:6px 10px;cursor:pointer;letter-spacing:1px;" onmouseover="this.style.borderColor='var(--cyan)';this.style.color='var(--cyan)'" onmouseout="this.style.borderColor='var(--line)';this.style.color='var(--text3)'">← BACK</button>
       </div>
-      <!-- summary strip -->
       <div class="summary-strip" id="cashlog-summary"></div>
       <div class="cash-log" id="cash-log-page" style="margin-top:0"></div>
     </div>
@@ -878,7 +875,7 @@ body::after {
   </div>
 </div>
 
-<!-- FIX #5: MODAL CONFIRM (ganti confirm() bawaan browser) -->
+<!-- MODAL CONFIRM -->
 <div class="modal-overlay" id="modal-confirm">
   <div class="modal">
     <div class="modal-bar" style="background:linear-gradient(90deg,var(--red),var(--amber))"></div>
@@ -888,7 +885,7 @@ body::after {
       <div class="modal-sub" id="m-confirm-sub">—</div>
       <div class="modal-actions">
         <button class="btn-mcancel" onclick="closeModal('modal-confirm')">BATAL</button>
-        <button class="btn-mconfirm danger" id="m-confirm-btn" onclick="">YA</button>
+        <button class="btn-mconfirm danger" id="m-confirm-btn">YA</button>
       </div>
     </div>
   </div>
@@ -948,6 +945,13 @@ const nowStr    = () => new Date().toLocaleString('id-ID',{day:'2-digit',month:'
 const nowDate   = () => new Date().toISOString().slice(0,10);
 const totalSaldo= () => state.banks.reduce((s,b)=>s+(state.saldo[b.key]||0),0);
 
+/* ── SNAPSHOT: clone semua saldo saat ini ── */
+const snapshotSaldo = () => {
+  const snap = {};
+  state.banks.forEach(b => { snap[b.key] = state.saldo[b.key] || 0; });
+  return snap;
+};
+
 function allOpts() {
   return state.banks.map(b=>`<option value="${b.key}">${bankEmoji(b.key)} ${b.label}</option>`).join('');
 }
@@ -988,19 +992,12 @@ function refreshDD() {
 const showLoad  = on => document.getElementById('loading-overlay').classList.toggle('visible', on);
 const showLogin = on => document.getElementById('login-screen').classList.toggle('visible', on);
 
-/* ── FIX: INITIALIZING BUG ──
-   Root cause: onAuthStateChange INITIAL_SESSION bisa terlambat/gagal kalau:
-   1. Network lambat / offline
-   2. Supabase SDK tidak trigger event sama sekali
-   Solusi: timeout fallback 6 detik — kalau INITIAL_SESSION belum terpanggil, paksa show login.
-*/
 let authResolved = false;
-const AUTH_TIMEOUT = 6000; // 6 detik
+const AUTH_TIMEOUT = 6000;
 
 const authTimeoutId = setTimeout(() => {
   if (!authResolved) {
     authResolved = true;
-    console.warn('[KONTER] Auth timeout — forcing login screen');
     showLoad(false);
     showLogin(true);
     toast('Koneksi lambat. Silakan login ulang.', 'red');
@@ -1008,7 +1005,7 @@ const authTimeoutId = setTimeout(() => {
 }, AUTH_TIMEOUT);
 
 let loginMode = 'masuk';
-function switchTab(m) {
+function switchLoginTab(m) {
   loginMode = m;
   document.getElementById('tab-masuk').classList.toggle('active', m==='masuk');
   document.getElementById('tab-daftar').classList.toggle('active', m==='daftar');
@@ -1157,7 +1154,6 @@ async function push() {
 
 sb.auth.onAuthStateChange(async(event, session) => {
   if(event==='INITIAL_SESSION'){
-    // FIX: Clear timeout — auth sudah resolved
     clearTimeout(authTimeoutId);
     authResolved=true;
     if(session?.user){ currentUser=session.user; setUserUI(currentUser); await loadState(); }
@@ -1261,18 +1257,16 @@ function getRecent(type, n=3) {
   return res;
 }
 
-/* ── Helper: switch tab tanpa duplikasi ── */
-function switchTab(tabIdx) {
+/* ── Helper: switch tab form ── */
+function switchFormTab(tabIdx) {
   const TYPES=['pulsa','cashout','barang','pengeluaran'];
   document.querySelectorAll('.type-tab').forEach((t,i)=>t.classList.toggle('active',i===tabIdx));
   TYPES.forEach((tp,i)=>document.getElementById('form-'+tp).style.display=i===tabIdx?'block':'none');
 }
 
 function refreshPresets() {
-  /* ── Panel terpadu: top 3 lintas tipe ── */
   const qfList = document.getElementById('qf-list');
   if(qfList) {
-    // Ambil 1 unique terbaru per tipe, max 3 total dari riwayat
     const TYPES=['pulsa','cashout','barang','pengeluaran'];
     const seen={}, items=[];
     for(const r of state.riwayat){
@@ -1317,7 +1311,6 @@ function refreshPresets() {
     }
   }
 
-  /* ── Per-form preset chips (VC fixed + recent per tab) ── */
   const fixedBtns=`<span class="preset-chip" onclick="fillPreset('VC20k')">VC 20K</span><span class="preset-chip" onclick="fillPreset('VC15k')">VC 15K</span><span class="preset-chip" onclick="fillPreset('VC18.5k')">VC 18.5K</span>`;
   const recentPulsa=getRecent('pulsa').map(r=>`<span class="preset-chip recent" onclick="qfFill('pulsa',${JSON.stringify(r)})">${r.nama}</span>`).join('');
   const pp=document.getElementById('preset-pulsa');
@@ -1336,44 +1329,36 @@ function refreshPresets() {
   if(pgEl) pgEl.innerHTML=rp.length?rp.map(r=>`<span class="preset-chip recent" onclick="qfFill('pgel',${JSON.stringify(r)})">${r.nama} (${fmt(r.jumlah)})</span>`).join(''):`<span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text3)">—</span>`;
 }
 
-/* ── MASTER fill function — isi semua kolom + switch tab ── */
 function qfFill(type, r) {
   if(type==='pulsa'){
-    switchTab(0);
+    switchFormTab(0);
     document.getElementById('p-nama').value  = r.nama||'';
     document.getElementById('p-from').value  = r.from||'';
     document.getElementById('p-modal').value = r.modal||0;
     document.getElementById('p-jual').value  = r.jual||0;
     prevPulsa();
   } else if(type==='cashout'){
-    switchTab(1);
+    switchFormTab(1);
     document.getElementById('co-nama').value  = r.nama||'';
     document.getElementById('co-from').value  = r.from||'';
     document.getElementById('co-total').value = r.total||0;
     document.getElementById('co-fee').value   = r.fee||0;
     prevCashout();
   } else if(type==='barang'){
-    switchTab(2);
+    switchFormTab(2);
     document.getElementById('br-nama').value  = r.nama||'';
     document.getElementById('br-modal').value = r.modal||0;
     document.getElementById('br-jual').value  = r.jual||0;
     prevBarang();
   } else if(type==='pgel'){
-    switchTab(3);
+    switchFormTab(3);
     document.getElementById('pg-nama').value   = r.nama||'';
     document.getElementById('pg-from').value   = r.from||'';
     document.getElementById('pg-jumlah').value = r.jumlah||0;
   }
-  // scroll ke form
   document.querySelector('.section-body')?.scrollIntoView({behavior:'smooth',block:'nearest'});
   toast('⚡ ISI CEPAT: '+(r.nama||r.ket||type));
 }
-
-/* legacy wrappers — masih dipakai fillPreset VC fixed */
-function fillRecentPulsa(n,f,m,j)  { qfFill('pulsa',   {nama:n,from:f,modal:m,jual:j}); }
-function fillRecentCO(n,f,t,fee)    { qfFill('cashout', {nama:n,from:f,total:t,fee}); }
-function fillRecentBr(n,m,j)        { qfFill('barang',  {nama:n,modal:m,jual:j}); }
-function fillRecentPg(n,f,jml)      { qfFill('pgel',    {nama:n,from:f,jumlah:jml}); }
 
 /* ═══════════════════════════════════════════════
    FORM LOGIC
@@ -1402,7 +1387,6 @@ function prevPulsa() {
 function prevCashout() {
   const t=parseFloat(document.getElementById('co-total').value)||0;
   const p=parseFloat(document.getElementById('co-fee').value)||0;
-  // FIX #6: tampilkan preview hanya kalau ada nilai
   if(t||p){
     document.getElementById('prev-cashout').classList.add('show');
     document.getElementById('co-cash').textContent   = fmt(t);
@@ -1429,7 +1413,7 @@ function addUtang(nama, jumlah, desc, type) {
 }
 
 /* ═══════════════════════════════════════════════
-   SUBMITS
+   SUBMITS — setiap submit menyimpan saldoBefore & saldoAfter
 ═══════════════════════════════════════════════ */
 function submitPulsa() {
   const nama  = document.getElementById('p-nama').value.trim();
@@ -1440,22 +1424,23 @@ function submitPulsa() {
   const uname = document.getElementById('p-uname').value.trim();
   if(!nama||!modal||!jual){ toast('Lengkapi semua field!','red'); return; }
   if((state.saldo[from]||0)<modal){ toast('Saldo '+bankLabel(from)+' tidak cukup!','red'); return; }
-  const cashBefore = state.saldo.cash||0;
+
+  const saldoBefore = snapshotSaldo();
   state.saldo[from]=(state.saldo[from]||0)-modal;
   if(!isU) state.saldo.cash=(state.saldo.cash||0)+jual;
   else addUtang(uname, jual, 'Pulsa: '+nama, 'pulsa');
-  const cashAfter = state.saldo.cash||0;
-  state.riwayat.unshift({type:'pulsa',nama,from,modal,jual,isUtang:isU,utangNama:uname,tgl:nowStr(),date:nowDate(),cashBefore,cashAfter});
+  const saldoAfter = snapshotSaldo();
+
+  state.riwayat.unshift({
+    type:'pulsa', nama, from, modal, jual,
+    isUtang:isU, utangNama:uname,
+    tgl:nowStr(), date:nowDate(),
+    saldoBefore, saldoAfter,
+    cashBefore:saldoBefore.cash, cashAfter:saldoAfter.cash
+  });
   save(); toast('✓ PULSA SAVED ⚡'); resetF('pulsa'); refreshPresets(); updateCancelBanner();
 }
 
-/*
- * FIX #1: CASHOUT — Hilangkan double-add profit.
- * Logika yang benar:
- *   - Cash keluar sebesar `total` (customer bayar cash)
- *   - Akun `from` (Dana/dll) bertambah `total + profit` (menerima uang digital customer + markup)
- *   - Profit TIDAK perlu ditambah ke cash lagi (sudah ada di akun `from`)
- */
 function submitCashout() {
   const nama   = document.getElementById('co-nama').value.trim();
   const total  = parseFloat(document.getElementById('co-total').value)||0;
@@ -1466,20 +1451,22 @@ function submitCashout() {
   if(!nama||!total){ toast('Lengkapi semua field!','red'); return; }
   if((state.saldo.cash||0)<total){ toast('Saldo Cash tidak cukup!','red'); return; }
 
-  const cashBefore = state.saldo.cash||0;
-  // Kurangi cash sebesar amount yang di-cashout
+  const saldoBefore = snapshotSaldo();
   state.saldo.cash=(state.saldo.cash||0)-total;
-
   if(!isU){
-    // Akun `from` (Dana/dll) terima total + profit
-    // (cash sudah keluar, profit masuk ke akun digital)
     state.saldo[from]=(state.saldo[from]||0)+(total+profit);
-    // REMOVED: if(profit>0) state.saldo.cash += profit  <-- ini yang bikin double
   } else {
     addUtang(uname, total+profit, 'Cash Out: '+nama, 'cashout');
   }
-  const cashAfter = state.saldo.cash||0;
-  state.riwayat.unshift({type:'cashout',nama,from,total,fee:profit,isUtang:isU,utangNama:uname,tgl:nowStr(),date:nowDate(),cashBefore,cashAfter});
+  const saldoAfter = snapshotSaldo();
+
+  state.riwayat.unshift({
+    type:'cashout', nama, from, total, fee:profit,
+    isUtang:isU, utangNama:uname,
+    tgl:nowStr(), date:nowDate(),
+    saldoBefore, saldoAfter,
+    cashBefore:saldoBefore.cash, cashAfter:saldoAfter.cash
+  });
   save(); toast('✓ CASHOUT SAVED 💵'); resetF('cashout'); refreshPresets(); updateCancelBanner();
 }
 
@@ -1490,11 +1477,19 @@ function submitBarang() {
   const isU   = state.utangState.barang;
   const uname = document.getElementById('br-uname').value.trim();
   if(!nama||!modal||!jual){ toast('Lengkapi semua field!','red'); return; }
-  const cashBefore = state.saldo.cash||0;
+
+  const saldoBefore = snapshotSaldo();
   if(!isU) state.saldo.cash=(state.saldo.cash||0)+jual;
   else addUtang(uname, jual, 'Barang: '+nama, 'barang');
-  const cashAfter = state.saldo.cash||0;
-  state.riwayat.unshift({type:'barang',nama,modal,jual,isUtang:isU,utangNama:uname,tgl:nowStr(),date:nowDate(),cashBefore,cashAfter});
+  const saldoAfter = snapshotSaldo();
+
+  state.riwayat.unshift({
+    type:'barang', nama, modal, jual,
+    isUtang:isU, utangNama:uname,
+    tgl:nowStr(), date:nowDate(),
+    saldoBefore, saldoAfter,
+    cashBefore:saldoBefore.cash, cashAfter:saldoAfter.cash
+  });
   save(); toast('✓ BARANG SAVED 📦'); resetF('barang'); refreshPresets(); updateCancelBanner();
 }
 
@@ -1504,10 +1499,17 @@ function submitPgel() {
   const jumlah = parseFloat(document.getElementById('pg-jumlah').value)||0;
   if(!nama||!jumlah){ toast('Lengkapi field!','red'); return; }
   if((state.saldo[from]||0)<jumlah){ toast('Saldo tidak cukup!','red'); return; }
-  const cashBefore = state.saldo.cash||0;
+
+  const saldoBefore = snapshotSaldo();
   state.saldo[from]=(state.saldo[from]||0)-jumlah;
-  const cashAfter = state.saldo.cash||0;
-  state.riwayat.unshift({type:'pengeluaran',nama,from,jumlah,tgl:nowStr(),date:nowDate(),cashBefore,cashAfter});
+  const saldoAfter = snapshotSaldo();
+
+  state.riwayat.unshift({
+    type:'pengeluaran', nama, from, jumlah,
+    tgl:nowStr(), date:nowDate(),
+    saldoBefore, saldoAfter,
+    cashBefore:saldoBefore.cash, cashAfter:saldoAfter.cash
+  });
   save(); toast('✓ PENGELUARAN SAVED 🧾');
   document.getElementById('pg-nama').value=''; document.getElementById('pg-jumlah').value='';
   refreshPresets(); updateCancelBanner();
@@ -1521,11 +1523,18 @@ function submitPindah() {
   if(from===to){ toast('From & To sama!','red'); return; }
   if(!jumlah){ toast('Masukkan jumlah!','red'); return; }
   if((state.saldo[from]||0)<(jumlah+fee)){ toast('Saldo tidak cukup!','red'); return; }
-  const cashBefore = state.saldo.cash||0;
+
+  const saldoBefore = snapshotSaldo();
   state.saldo[from]=(state.saldo[from]||0)-(jumlah+fee);
   state.saldo[to]  =(state.saldo[to]||0)+jumlah;
-  const cashAfter = state.saldo.cash||0;
-  state.riwayat.unshift({type:'pindah',from,to,jumlah,fee,tgl:nowStr(),date:nowDate(),cashBefore,cashAfter});
+  const saldoAfter = snapshotSaldo();
+
+  state.riwayat.unshift({
+    type:'pindah', from, to, jumlah, fee,
+    tgl:nowStr(), date:nowDate(),
+    saldoBefore, saldoAfter,
+    cashBefore:saldoBefore.cash, cashAfter:saldoAfter.cash
+  });
   save(); toast('✓ TRANSFER DONE 🔄');
   document.getElementById('ps-jumlah').value=''; document.getElementById('ps-fee').value='';
   renderSaldoGrid(); renderBankList(); updateCancelBanner();
@@ -1536,10 +1545,17 @@ function submitTambahSaldo() {
   const jumlah = parseFloat(document.getElementById('ts-jumlah').value)||0;
   const ket    = document.getElementById('ts-ket').value.trim()||'Tambah saldo '+bankLabel(to);
   if(!jumlah){ toast('Masukkan jumlah!','red'); return; }
-  const cashBefore = state.saldo.cash||0;
+
+  const saldoBefore = snapshotSaldo();
   state.saldo[to]=(state.saldo[to]||0)+jumlah;
-  const cashAfter = state.saldo.cash||0;
-  state.riwayat.unshift({type:'tambah_saldo',to,jumlah,ket,tgl:nowStr(),date:nowDate(),cashBefore,cashAfter});
+  const saldoAfter = snapshotSaldo();
+
+  state.riwayat.unshift({
+    type:'tambah_saldo', to, jumlah, ket,
+    tgl:nowStr(), date:nowDate(),
+    saldoBefore, saldoAfter,
+    cashBefore:saldoBefore.cash, cashAfter:saldoAfter.cash
+  });
   save();
   document.getElementById('ts-jumlah').value=''; document.getElementById('ts-ket').value='';
   renderSaldoGrid(); renderBankList(); updateCancelBanner();
@@ -1629,46 +1645,32 @@ function confirmCancel() {
   const trx=state.riwayat[idx];
 
   if(trx.type==='pulsa'){
-    // Kembalikan modal ke akun `from`
     state.saldo[trx.from]=(state.saldo[trx.from]||0)+trx.modal;
-    // Batalkan penerimaan cash / utang
     if(!trx.isUtang) state.saldo.cash=Math.max(0,(state.saldo.cash||0)-trx.jual);
     else {
       const u=state.utang.find(u=>u.nama===(trx.utangNama||'Pelanggan'));
       if(u){ u.total=Math.max(0,u.total-trx.jual); if(u.total<=0) state.utang=state.utang.filter(x=>x!==u); }
     }
-
   } else if(trx.type==='cashout'){
-    /*
-     * FIX #2: CANCEL CASHOUT — sesuaikan dengan logika submit yang sudah difix (#1)
-     * Submit:  cash -= total; from += total+profit
-     * Cancel:  cash += total; from -= total+profit
-     * REMOVED: if(p>0) cash -= p  <-- ini salah karena profit tidak pernah masuk ke cash
-     */
     const p=trx.fee||0;
     state.saldo.cash=(state.saldo.cash||0)+trx.total;
     if(!trx.isUtang){
       state.saldo[trx.from]=Math.max(0,(state.saldo[trx.from]||0)-(trx.total+p));
-      // REMOVED: if(p>0) state.saldo.cash -= p
     } else {
       const u=state.utang.find(u=>u.nama===(trx.utangNama||'Pelanggan'));
       if(u){ u.total=Math.max(0,u.total-(trx.total+p)); if(u.total<=0) state.utang=state.utang.filter(x=>x!==u); }
     }
-
   } else if(trx.type==='barang'){
     if(!trx.isUtang) state.saldo.cash=Math.max(0,(state.saldo.cash||0)-trx.jual);
     else {
       const u=state.utang.find(u=>u.nama===(trx.utangNama||'Pelanggan'));
       if(u){ u.total=Math.max(0,u.total-trx.jual); if(u.total<=0) state.utang=state.utang.filter(x=>x!==u); }
     }
-
   } else if(trx.type==='pengeluaran'){
     state.saldo[trx.from]=(state.saldo[trx.from]||0)+trx.jumlah;
-
   } else if(trx.type==='pindah'){
     state.saldo[trx.from]=(state.saldo[trx.from]||0)+trx.jumlah+(trx.fee||0);
     state.saldo[trx.to]=Math.max(0,(state.saldo[trx.to]||0)-trx.jumlah);
-
   } else if(trx.type==='tambah_saldo'){
     state.saldo[trx.to]=Math.max(0,(state.saldo[trx.to]||0)-trx.jumlah);
   }
@@ -1681,7 +1683,7 @@ function confirmCancel() {
 }
 
 /* ═══════════════════════════════════════════════
-   RIWAYAT
+   RIWAYAT — menampilkan snapshot saldo semua akun
 ═══════════════════════════════════════════════ */
 function renderRiwayat() {
   const fType=document.getElementById('f-type').value;
@@ -1708,6 +1710,7 @@ function renderRiwayat() {
   el.innerHTML=list.map(r=>{
     let title='', sub='', amt='', amtCls='', badges='';
     const cx=r._cancelled?`<span class="badge badge-cancel">DIBATALKAN</span>`:'';
+
     if(r.type==='pulsa'){
       title=`📶 ${r.nama}`;
       sub=`FROM ${bankLabel(r.from)} · MODAL ${fmt(r.modal)} · PROFIT ${fmt(r.jual-r.modal)}`;
@@ -1748,39 +1751,46 @@ function renderRiwayat() {
       badges='<span class="badge badge-cancel">PEMBATALAN</span>';
     }
 
-    // Saldo snapshot (semua akun)
+    /* ── SALDO SNAPSHOT: tampilkan semua akun yang berubah ── */
     let saldoSnap = '';
     if(r.saldoBefore && r.saldoAfter) {
-      const allKeys = new Set([...Object.keys(r.saldoBefore), ...Object.keys(r.saldoAfter)]);
+      const allKeys = new Set([
+        ...Object.keys(r.saldoBefore),
+        ...Object.keys(r.saldoAfter)
+      ]);
       const rows = [...allKeys].filter(k => {
-        const before = r.saldoBefore[k]||0;
-        const after  = r.saldoAfter[k]||0;
+        const before = r.saldoBefore[k] ?? 0;
+        const after  = r.saldoAfter[k]  ?? 0;
         return before !== after;
       }).map(k => {
-        const before = r.saldoBefore[k]||0;
-        const after  = r.saldoAfter[k]||0;
+        const before = r.saldoBefore[k] ?? 0;
+        const after  = r.saldoAfter[k]  ?? 0;
         const delta  = after - before;
         const arrow  = delta > 0 ? '▲' : '▼';
         const col    = delta > 0 ? 'var(--green)' : 'var(--red)';
-        const bl = state.banks.find(b=>b.key===k);
-        const label = bl ? bl.label : k;
+        const bl     = state.banks.find(b => b.key === k);
+        const label  = bl ? bl.label : k;
         return `<div class="saldo-snap-row">
           <span class="saldo-snap-bank">${bankEmoji(k)} ${label}</span>
           <span class="saldo-snap-vals">
             <span class="saldo-snap-before">${fmt(before)}</span>
-            <span class="saldo-snap-arrow" style="color:${col}">${arrow} ${delta>0?'+':''}${fmt(delta)}</span>
+            <span class="saldo-snap-arrow" style="color:${col}">&nbsp;${arrow}&nbsp;</span>
             <span class="saldo-snap-after" style="color:${col}">${fmt(after)}</span>
           </span>
         </div>`;
       }).join('');
+
       if(rows) {
-        saldoSnap = `<div class="saldo-snap">${rows}</div>`;
+        saldoSnap = `<div class="saldo-snap">
+          <div class="saldo-snap-lbl">PERUBAHAN SALDO</div>
+          ${rows}
+        </div>`;
       }
     }
 
     return `<div class="trx-item" style="${r._cancelled?'opacity:.4':''}">
       <div class="trx-item-bar"></div>
-      <div class="trx-item-left" style="flex:1">
+      <div class="trx-item-left">
         <div class="trx-title">${title}</div>
         <div class="trx-sub">${(sub?sub+' · ':'')+r.tgl}</div>
         <div class="trx-badges">${badges}</div>
@@ -1791,6 +1801,7 @@ function renderRiwayat() {
       </div>
     </div>`;
   }).join('');
+}
 
 /* ═══════════════════════════════════════════════
    CASH LOG — Page Saldo (widget) + Page Cashlog (full)
@@ -1798,7 +1809,6 @@ function renderRiwayat() {
 function showCashLog() {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  // aktifkan nav saldo agar back button highlight benar
   const saldoBtn = document.querySelector('.nav-btn:nth-child(2)');
   if(saldoBtn) saldoBtn.classList.add('active');
   document.getElementById('page-cashlog').classList.add('active');
@@ -1813,7 +1823,6 @@ function renderCashLog(fullPage=false) {
     (r.cashBefore !== undefined || r.cashAfter !== undefined)
   );
 
-  // ── Widget di page saldo (max 5) ──
   const widgetEl = document.getElementById('cash-log');
   if(widgetEl) {
     const slice = logs.slice(0,5);
@@ -1827,12 +1836,10 @@ function renderCashLog(fullPage=false) {
 
   if(!fullPage) return;
 
-  // ── Full page ──
   const pageEl = document.getElementById('cash-log-page');
   const sumEl  = document.getElementById('cashlog-summary');
   if(!pageEl) return;
 
-  // summary: total in vs out
   const totalIn  = logs.reduce((s,r)=>s+Math.max(0,(r.cashAfter||0)-(r.cashBefore||0)),0);
   const totalOut = logs.reduce((s,r)=>s+Math.max(0,(r.cashBefore||0)-(r.cashAfter||0)),0);
   if(sumEl) sumEl.innerHTML=`
@@ -1852,11 +1859,11 @@ function cashLogRowHTML(r) {
   const deltaFmt = (delta>=0?'+':'')+fmt(delta);
   const cls      = delta>0?'up':delta<0?'down':'neu';
   let name = '';
-  if(r.type==='pulsa')          name=`📶 ${r.nama}`;
-  else if(r.type==='cashout')   name=`💵 ${r.nama}`;
-  else if(r.type==='barang')    name=`📦 ${r.nama}`;
+  if(r.type==='pulsa')            name=`📶 ${r.nama}`;
+  else if(r.type==='cashout')     name=`💵 ${r.nama}`;
+  else if(r.type==='barang')      name=`📦 ${r.nama}`;
   else if(r.type==='pengeluaran') name=`🧾 ${r.nama}`;
-  else if(r.type==='pindah')    name=`🔄 ${bankLabel(r.from)}→${bankLabel(r.to)}`;
+  else if(r.type==='pindah')      name=`🔄 ${bankLabel(r.from)}→${bankLabel(r.to)}`;
   else if(r.type==='tambah_saldo') name=`➕ ${r.ket||'Tambah Saldo'}`;
   else if(r.type==='bayar_utang')  name=`✓ Bayar — ${r.nama}`;
   return `<div class="cash-log-row">
@@ -1927,11 +1934,18 @@ function confirmBayar() {
   const bayar=parseFloat(document.getElementById('m-bayar-jml').value)||0;
   const u=state.utang[bayarIdx];
   if(!bayar||bayar>u.total){ toast('Jumlah tidak valid!','red'); return; }
-  const cashBefore = state.saldo.cash||0;
+
+  const saldoBefore = snapshotSaldo();
   state.saldo.cash=(state.saldo.cash||0)+bayar;
-  const cashAfter = state.saldo.cash;
   u.total-=bayar;
-  state.riwayat.unshift({type:'bayar_utang',nama:u.nama,jumlah:bayar,cashBefore,cashAfter,tgl:nowStr(),date:nowDate()});
+  const saldoAfter = snapshotSaldo();
+
+  state.riwayat.unshift({
+    type:'bayar_utang', nama:u.nama, jumlah:bayar,
+    saldoBefore, saldoAfter,
+    cashBefore:saldoBefore.cash, cashAfter:saldoAfter.cash,
+    tgl:nowStr(), date:nowDate()
+  });
   if(u.total<=0) state.utang.splice(bayarIdx,1);
   save(); closeModal('modal-bayar'); toast('✓ UTANG DIBAYAR 🎉'); renderUtang();
 }
@@ -1955,7 +1969,6 @@ function resetF(type) {
 
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-/* FIX #5: Custom confirm modal — ganti window.confirm() yang diblokir iOS Safari */
 function openConfirmModal({ico='⚠', title='Konfirmasi', sub='', onConfirm=()=>{}}) {
   document.getElementById('m-confirm-ico').textContent   = ico;
   document.getElementById('m-confirm-title').textContent = title;
@@ -1988,7 +2001,6 @@ function exportCSV() {
   toast('CSV EXPORTED ⬇');
 }
 
-/* FIX #5: Ganti clearRiwayat() dari confirm() ke custom modal */
 function openClearModal() {
   openConfirmModal({
     ico: '🗑',
