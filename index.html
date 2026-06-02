@@ -349,6 +349,15 @@ body::after {
 
 .divider { height:1px; background:linear-gradient(90deg,transparent,var(--line),transparent); margin:16px 0; }
 
+  /* ══ SALDO SNAPSHOT ══ */
+.saldo-snap { margin-top:8px; border-top:1px solid var(--line2); padding-top:7px; display:flex; flex-direction:column; gap:4px; }
+.saldo-snap-row { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.saldo-snap-bank { font-family:'Space Mono',monospace; font-size:8px; color:var(--text3); letter-spacing:.5px; flex-shrink:0; }
+.saldo-snap-vals { display:flex; align-items:center; gap:6px; font-family:'Space Mono',monospace; font-size:8px; }
+.saldo-snap-before { color:var(--text3); }
+.saldo-snap-arrow { font-size:8px; font-weight:700; white-space:nowrap; }
+.saldo-snap-after { color:var(--text); font-weight:700; }
+
 /* ══ UTANG ══ */
 .utang-list { display:flex; flex-direction:column; gap:8px; }
 .utang-card { background:var(--surface); border:1px solid rgba(255,61,90,0.2); overflow:hidden; }
@@ -1738,19 +1747,50 @@ function renderRiwayat() {
       amt='—'; amtCls='amount-neu';
       badges='<span class="badge badge-cancel">PEMBATALAN</span>';
     }
+
+    // Saldo snapshot (semua akun)
+    let saldoSnap = '';
+    if(r.saldoBefore && r.saldoAfter) {
+      const allKeys = new Set([...Object.keys(r.saldoBefore), ...Object.keys(r.saldoAfter)]);
+      const rows = [...allKeys].filter(k => {
+        const before = r.saldoBefore[k]||0;
+        const after  = r.saldoAfter[k]||0;
+        return before !== after;
+      }).map(k => {
+        const before = r.saldoBefore[k]||0;
+        const after  = r.saldoAfter[k]||0;
+        const delta  = after - before;
+        const arrow  = delta > 0 ? '▲' : '▼';
+        const col    = delta > 0 ? 'var(--green)' : 'var(--red)';
+        const bl = state.banks.find(b=>b.key===k);
+        const label = bl ? bl.label : k;
+        return `<div class="saldo-snap-row">
+          <span class="saldo-snap-bank">${bankEmoji(k)} ${label}</span>
+          <span class="saldo-snap-vals">
+            <span class="saldo-snap-before">${fmt(before)}</span>
+            <span class="saldo-snap-arrow" style="color:${col}">${arrow} ${delta>0?'+':''}${fmt(delta)}</span>
+            <span class="saldo-snap-after" style="color:${col}">${fmt(after)}</span>
+          </span>
+        </div>`;
+      }).join('');
+      if(rows) {
+        saldoSnap = `<div class="saldo-snap">${rows}</div>`;
+      }
+    }
+
     return `<div class="trx-item" style="${r._cancelled?'opacity:.4':''}">
       <div class="trx-item-bar"></div>
-      <div class="trx-item-left">
+      <div class="trx-item-left" style="flex:1">
         <div class="trx-title">${title}</div>
         <div class="trx-sub">${(sub?sub+' · ':'')+r.tgl}</div>
         <div class="trx-badges">${badges}</div>
+        ${saldoSnap}
       </div>
       <div class="trx-item-right">
         <div class="trx-amount ${amtCls}">${amt}</div>
       </div>
     </div>`;
   }).join('');
-}
 
 /* ═══════════════════════════════════════════════
    CASH LOG — Page Saldo (widget) + Page Cashlog (full)
